@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { complete, history, incoming, ownPending, resolve, today } from '../controllers/questController';
+const router = Router();
+router.get('/quests/today', today);
+router.get('/quests/history', history);
+router.get('/quests/pending', ownPending);
+router.get('/quests/verifications/incoming', incoming);
+router.post('/quests/:id/complete', complete);
+router.post('/quests/:id/verify', resolve);
+export default router;
