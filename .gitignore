@@ -1,0 +1,12 @@
+# Secret configuration files
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+backend/node_modules/
+backend/dist/
+frontend/node_modules/
+frontend/dist/
