@@ -1,0 +1,114 @@
+### Esempi di richieste per l'estensione "REST Client" di VS Code.
+### Dopo il login il cookie di sessione viene salvato e inviato in automatico alle richieste successive.
+@base = http://localhost:3000/api
+
+### Registrazione
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{"email":"prova@example.test","username":"ProvaHunter","password":"Password123"}
+
+### Login (imposta il cookie di sessione httpOnly)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{"username":"AlexHunter","password":"HunterGym123!"}
+
+### Profilo dell'utente collegato
+GET {{base}}/auth/me
+
+### Logout (elimina la sessione)
+POST {{base}}/auth/logout
+
+### Senza cookie di sessione deve rispondere 401: esegui prima il logout
+GET {{base}}/auth/me
+
+### --- Quest ---
+GET {{base}}/quests/today
+
+###
+GET {{base}}/quests/history
+
+### Segna una quest completata scegliendo un amico verificatore
+POST {{base}}/quests/1/complete
+Content-Type: application/json
+
+{"verifierId":2}
+
+### Quest da approvare come amico
+GET {{base}}/quests/verifications/incoming
+
+###
+GET {{base}}/quests/pending
+
+### Approva (true) o rifiuta (false) una quest
+POST {{base}}/quests/1/verify
+Content-Type: application/json
+
+{"approved":true}
+
+### --- Amici ---
+GET {{base}}/users/search?username=mi
+
+###
+POST {{base}}/friends/requests
+Content-Type: application/json
+
+{"userId":2}
+
+###
+GET {{base}}/friends/requests
+
+###
+POST {{base}}/friends/requests/1/accept
+
+###
+POST {{base}}/friends/requests/1/reject
+
+###
+GET {{base}}/friends
+
+###
+GET {{base}}/friends/leaderboard
+
+###
+DELETE {{base}}/friends/2
+
+### --- Arena ---
+POST {{base}}/battles
+Content-Type: application/json
+
+{"opponentId":2}
+
+### Storico (riassunto) e dettaglio con registro dei turni
+GET {{base}}/battles
+
+###
+GET {{base}}/battles/1
+
+### --- Profilo ---
+GET {{base}}/profile
+
+###
+PUT {{base}}/profile/item
+Content-Type: application/json
+
+{"itemId":1}
+
+###
+PUT {{base}}/profile/password
+Content-Type: application/json
+
+{"currentPassword":"password-attuale","newPassword":"password-nuova"}
+
+### Scelta della classe dopo aver raggiunto 33000 XP
+PUT {{base}}/profile/monarch-class
+Content-Type: application/json
+
+{"monarchClass":"Ombre"}
+
+### --- Admin: solo con l'account admin ---
+POST {{base}}/admin/self/rewards
+Content-Type: application/json
+
+{"xp":100000,"str":100000,"vit":100000,"agi":100000}
