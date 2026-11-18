@@ -1,48 +1,77 @@
 # Hunter Gym
 
-Web app di allenamento con quest giornaliere, verifica tra amici, ranghi, item
-e combattimenti simulati. Questa fase integra l'API Express + TypeScript con la
-base MySQL 8 già presente.
+Hunter Gym è una web app di allenamento con quest giornaliere, verifiche tra
+amici, ranghi, oggetti, profili e combattimenti simulati.
 
-## Struttura
+## Stack
+
+- React 18, TypeScript, Vite e React Router nel frontend.
+- Node.js, Express 4 e TypeScript nel backend.
+- MySQL 8 con sessioni persistite nel database e cookie `httpOnly`.
+- Docker Compose per database, seed, API e frontend.
+
+## Struttura finale
 
 ```text
-hunter-gym/
-├── compose.yaml                 # MySQL, seed e API
+.
+├── compose.yaml
+├── .env.example
 ├── backend/
-│   ├── sql/schema.sql           # tabelle e catalogo quest
-│   ├── scripts/                 # init-db e seed
-│   ├── api.http                 # esempi di richieste REST Client
+│   ├── sql/schema.sql
+│   ├── scripts/
 │   └── src/
-│       ├── app.ts               # Express, middleware e rotte
-│       ├── db.ts                # pool MySQL condiviso
-│       ├── gameConfig.ts        # ranghi, premi e combattimenti
-│       ├── middleware/          # autenticazione e controlli admin
-│       ├── controllers/         # validazione e risposte HTTP
-│       ├── routes/              # endpoint applicativi
-│       ├── services/            # query e logica applicativa
-│       └── utils/               # risposte e sessioni
+└── frontend/
+    ├── public/
+    ├── src/
+    ├── Dockerfile
+    └── nginx.conf
 ```
 
-## Avvio con Docker
+## Prerequisiti
 
-1. Copia `.env.example` in `.env` e sostituisci i placeholder con valori locali.
-2. Avvia database, seed e API:
+- Node.js 20+
+- npm
+- Docker con Docker Compose
+- MySQL 8 solo per l'avvio locale senza Docker
 
-   ```sh
-   docker compose up --build
-   ```
+## Configurazione
 
-Il servizio `db` usa MySQL 8, `utf8mb4`, la collation
-`utf8mb4_0900_ai_ci`, la porta host `3307` e il volume persistente
-`hunter_gym_mysql`. Il servizio `seed` attende l'healthcheck del database,
-inizializza le tabelle e inserisce gli account demo in modo idempotente. Il
-servizio `api` attende il completamento corretto del seed ed espone la porta
-`3000`.
+Copiare `.env.example` in `.env` e sostituire i placeholder:
+
+```sh
+cp .env.example .env
+```
+
+Variabili principali:
+
+- `MYSQL_ROOT_PASSWORD`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`: MySQL.
+- `FRONTEND_ORIGIN`: origine CORS del frontend; in locale è `http://localhost:5173`.
+- `VITE_API_URL`: URL browser dell'API con prefisso `/api`; in locale è `http://localhost:3000/api`.
+- `COOKIE_SECURE=false` per HTTP locale; usare `true` solo con HTTPS.
+- `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`: account amministratore opzionale creato o promosso dal seed.
+
+Non aggiungere `.env` reali alla repository. `frontend/.env.example` contiene
+la configurazione locale separata del frontend.
+
+## Avvio completo con Docker
+
+```sh
+docker compose up --build
+```
+
+URL disponibili:
+
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:3000/api`
+- Salute API: `http://localhost:3000/api/health`
+
+Compose usa il volume persistente `hunter_gym_mysql`, MySQL sulla porta host
+`3307` e container `3306`. Il seed attende il database, inizializza lo schema e
+aggiunge gli account demo in modo idempotente. L'API attende il completamento
+del seed.
 
 Gli account demo sono `AlexHunter`, `MiraBlade` e `LeoRogue`, tutti con password
-`HunterGym123!`. Per creare o promuovere un amministratore, valorizza
-`ADMIN_USERNAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` nel file `.env`.
+`HunterGym123!`. I dati del volume persistono fra gli avvii.
 
 Per fermare i container senza cancellare i dati:
 
@@ -50,13 +79,12 @@ Per fermare i container senza cancellare i dati:
 docker compose down
 ```
 
-Non usare `docker compose down -v` salvo necessità esplicita di eliminare il
-database locale.
+`docker compose down -v` elimina anche il volume MySQL e cancella tutti i dati:
+usarlo solo consapevolmente.
 
-## Avvio backend locale
+## Avvio locale separato
 
-Servono Node.js 20+, npm e MySQL 8. Configura le variabili d'ambiente del
-database (`DB_HOST=localhost`, `DB_PORT=3307`), quindi esegui:
+Backend:
 
 ```sh
 cd backend
@@ -67,31 +95,31 @@ npm run seed
 npm run dev
 ```
 
-L'API usa `http://localhost:3000/api`. Il connettore condiviso è
-`backend/src/db.ts`: servizi e controller lo riutilizzano senza creare pool
-aggiuntivi.
+Il backend si aspetta MySQL raggiungibile come configurato in `.env`:
+per Docker MySQL è raggiungibile tramite host `db:3306`; sulla macchina host la
+porta esposta è `3307`.
 
-## Configurazione
-
-`FRONTEND_ORIGIN` controlla l'origine CORS con credenziali.
-`COOKIE_SECURE=true` va usato solo con HTTPS. `PORT` predefinita è `3000`.
-Gli account demo sono `AlexHunter`, `MiraBlade` e `LeoRogue`, tutti con password
-`HunterGym123!`.
-
-## Endpoint e prove manuali
-
-L'endpoint pubblico `GET /api/health` verifica anche la connessione MySQL e
-risponde con l'envelope `success/data`. Registrazione, login, logout e
-`GET /api/auth/me` usano sessioni persistite nel database e cookie `httpOnly`;
-le rotte protette senza cookie rispondono `401`, mentre le rotte admin
-richiedono il ruolo amministratore. Gli esempi completi sono in
-`backend/api.http`.
-
-Per fermare i container senza cancellare i dati:
+Frontend:
 
 ```sh
-docker compose down
+cd frontend
+cp .env.example .env
+npm ci
+npm run dev
 ```
 
-Non usare `docker compose down -v` salvo necessità esplicita di eliminare il
-database locale.
+Il frontend usa `VITE_API_URL` durante la build Vite e invia i cookie con
+`credentials: 'include'`. Per una build containerizzata, l'argomento Compose
+`VITE_API_URL` viene incorporato nell'immagine `web`.
+
+## Prove manuali
+
+- **Auth:** registrazione, login, reload con sessione valida, logout e redirect dopo sessione scaduta.
+- **Quest:** completamento di una quest e selezione di un verificatore.
+- **Verifiche:** approvazione/rifiuto delle verifiche ricevute.
+- **Amici:** ricerca utenti, invio/rifiuto/accettazione richieste e rimozione amicizia.
+- **Arena:** avvio battaglia contro un amico e apertura della cronologia/dettaglio.
+- **Profilo:** cambio password, item equipaggiato e monarch class.
+- **Admin:** accesso solo con ruolo amministratore e assegnazione di premi all'account.
+
+Gli esempi delle richieste REST sono in `backend/api.http`.
